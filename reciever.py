@@ -101,8 +101,7 @@ if not os.path.exists(CSV_FILE):
 
 @app.route("/")
 def index():
-
-    return return render_template("receiver.html")
+    return render_template("receiver.html")
 
 
 
