@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EOT | Operational Receiving Center</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root {
+    --bg-main: #f8f9fa;
+    --sidebar-bg: #ffffff;
+    --primary: #2563eb;
+    --primary-dark: #1e40af;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --hazard-red: #ef4444;
+    --warning-orange: #f59e0b;
+    --success-green: #10b981;
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    display: grid;
+    grid-template-columns: 260px 1fr 340px;
+    height: 100vh;
+    overflow: hidden;
+}
+
+nav {
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Legend Styling */
+.map-legend {
+    background: white;
+    padding: 12px;
+    line-height: 18px;
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    font-size: 0.75rem;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+.legend-line {
+    width: 15px;
+    height: 0;
+    border-top: 2px dashed #f59e0b;
+    margin-right: 8px;
+}
+
+.brand-container { padding-bottom: 32px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.brand-name { font-weight: 800; font-size: 1.25rem; color: var(--primary); letter-spacing: -0.025em; }
+.nav-link { padding: 10px 12px; border-radius: 6px; font-size: 0.875rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
+.nav-link:hover { background: #f1f5f9; color: var(--text-main); }
+.nav-link.active { background: #eff6ff; color: var(--primary); }
+
+main { padding: 32px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
+.section-title { font-size: 1.125rem; font-weight: 600; }
+.data-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px; box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+th { text-align: left; padding: 12px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+td { padding: 16px 12px; border-bottom: 1px solid var(--border); }
+.status-pill { padding: 4px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+.status-red { background: #fee2e2; color: #b91c1c; }
+.status-orange { background: #ffedd5; color: #9a3412; }
+.status-green { background: #dcfce7; color: #15803d; }
+
+aside { background: var(--sidebar-bg); border-left: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+.risk-overview { text-align: center; padding: 24px; background: #f8fafc; border-radius: 12px; border: 1px solid var(--border); }
+.risk-score { font-size: 3rem; font-weight: 800; color: var(--hazard-red); line-height: 1; margin: 8px 0; }
+
+.btn { width: 100%; padding: 12px; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: 0.2s; border: none; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-outline { background: white; border: 1px solid var(--border); color: var(--text-main); margin-top: 8px; }
+.btn-outline:hover { background: #f8fafc; }
+
+.log-item { padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.75rem; }
+.log-meta { color: var(--text-muted); margin-bottom: 4px; display: block; }
+</style>
+</head>
+<body>
+<nav>
+    <div class="brand-container">
+        <div class="brand-name">EOT PLATFORM</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">OPERATIONAL INTELLIGENCE</div>
+    </div>
+    <div class="nav-link active">Intelligence Dashboard</div>
+    <div class="nav-link">Incoming Field Data</div>
+    <div class="nav-link">Hotspot Analytics</div>
+    <div class="nav-link">LGU Reporting Hub</div>
+    <div class="nav-link">Audit & Compliance</div>
+    <div class="nav-link" style="margin-top: auto;">System Settings</div>
+</nav>
+
+<main id="main-content"></main>
+
+<aside>
+    <div class="section-title">Risk Intelligence</div>
+    <div class="risk-overview">
+        <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Computed Risk Index</span>
+        <div class="risk-score">0.88</div>
+        <span style="font-size: 0.75rem; color: var(--hazard-red); font-weight: 700;">THRESHOLD EXCEEDED</span>
+    </div>
+    <div>
+        <button class="btn btn-primary" onclick="triggerEscal()">Trigger Escalation</button>
+    </div>
+</aside>
+
+<script>
+let refreshInterval = null;
+let hotspotMap = null;
+let hotspotMarkers = [];
+let barangayChart = null;
+
+function stopAutoRefresh(){
+    if(refreshInterval){
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
+}
+
+function startAutoRefresh(fn, ms=5000){
+    stopAutoRefresh();
+    fn();
+    refreshInterval = setInterval(fn, ms);
+}
+
+// ----------------------------
+// DATA UTILITIES
+// ----------------------------
+function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; 
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+// ----------------------------
+// TABLE LOADER
+// ----------------------------
+async function loadQueue(tbodySelector="table tbody") {
+    try {
+        const res = await fetch("/api/ingestion");
+        if(!res.ok) throw new Error("Failed to fetch ingestion");
+        const data = await res.json();
+        const tbody = document.querySelector(tbodySelector);
+        if(!tbody) return;
+        tbody.innerHTML = "";
+        data.forEach(entry => {
+            const row = document.createElement("tr");
+            let riskClass = entry.egg_count > 10 ? "status-red" : "status-green";
+            let riskText = entry.egg_count > 10 ? "High" : "Normal";
+            row.innerHTML = `
+                <td>${entry.trap_id}</td>
+                <td>${entry.timestamp}</td>
+                <td>${entry.gps}</td>
+                <td>${entry.egg_count}</td>
+                <td><span class="status-pill ${riskClass}">${riskText}</span></td>
+                <td><span class="status-pill ${entry.sha256_valid ? 'status-green' : 'status-red'}">${entry.sha256_valid ? 'Valid' : 'Invalid'}</span></td>
+            `;
+            tbody.appendChild(row);
+        });
+    } catch (err) {
+        console.error("Failed to load queue:", err);
+    }
+}
+
+// ----------------------------
+// HOTSPOT MAP + LIST
+// ----------------------------
+async function loadHotspotMapAndList() {
+    try {
+        const res = await fetch("/api/ingestion");
+        if(!res.ok) throw new Error("Failed to fetch ingestion");
+        const data = await res.json();
+        const container = document.querySelector("#hotspot-container");
+        if(!container) return;
+
+        const points = data.filter(d => d.gps && d.gps.includes(",")).map(d => {
+            const [lat, lng] = d.gps.split(",").map(x => parseFloat(x.trim()));
+            return { lat, lng, egg_count: d.egg_count, trap_id: d.trap_id };
+        });
+
+        // 1. Map Initialization
+        if(!hotspotMap){
+            const startPos = points.length > 0 ? [points[0].lat, points[0].lng] : [14.5995, 120.9842];
+            hotspotMap = L.map("map").setView(startPos, 13);
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(hotspotMap);
+
+            const legend = L.control({ position: 'bottomright' });
+            legend.onAdd = function () {
+                const div = L.DomUtil.create('div', 'map-legend');
+                div.innerHTML = `
+                    <div style="font-weight:700; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:4px;">Map Details</div>
+                    <div class="legend-item"><div class="legend-color" style="background:#ef4444;"></div><span>High Risk (> 10)</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#2563eb;"></div><span>Normal Risk</span></div>
+                    <div class="legend-item"><div class="legend-line"></div><span>100m Triangulation</span></div>
+                `;
+                return div;
+            };
+            legend.addTo(hotspotMap);
+        }
+
+        hotspotMarkers.forEach(m => hotspotMap.removeLayer(m));
+        hotspotMarkers = [];
+
+        // 2. Plotting & 100m Triangulation
+        points.forEach((p1, i) => {
+            const marker = L.circleMarker([p1.lat, p1.lng], {
+                radius: 7,
+                fillColor: p1.egg_count > 10 ? "#ef4444" : "#2563eb",
+                color: "#fff",
+                weight: 2,
+                fillOpacity: 0.9
+            }).addTo(hotspotMap);
+            marker.bindPopup(`Trap: ${p1.trap_id}<br>Eggs: ${p1.egg_count}`);
+            hotspotMarkers.push(marker);
+
+            points.forEach((p2, j) => {
+                if (i === j) return;
+                const dist = getDistance(p1.lat, p1.lng, p2.lat, p2.lng);
+                if (dist <= 100) {
+                    // Change this in your receiver.html (Line 183-191)
+const zone = L.circle([p1.lat, p1.lng], {
+    radius: 100,
+    color: "#ef4444", // Change from #f59e0b to Red or another color
+    weight: 1,
+    dashArray: '5, 5',
+    fillColor: "#ef4444", 
+    fillOpacity: 0.05,
+    interactive: false
+}).addTo(hotspotMap);
+                    hotspotMarkers.push(zone);
+                }
+            });
+        });
+
+        // 3. Proximity Alert List
+        let alertHtml = "<h4>100m Proximity Alerts</h4>";
+        let clustersFound = false;
+        for(let i=0; i<points.length; i++){
+            for(let j=i+1; j<points.length; j++){
+                const d = getDistance(points[i].lat, points[i].lng, points[j].lat, points[j].lng);
+                if(d <= 100) {
+                    clustersFound = true;
+                    alertHtml += `<div class="log-item">
+                        <span class="log-meta" style="color:#f59e0b; font-weight:bold;">CLUSTER DETECTED</span>
+                        Traps <strong>${points[i].trap_id}</strong> & <strong>${points[j].trap_id}</strong> are ${Math.round(d)}m apart.
+                    </div>`;
+                }
+            }
+        }
+        container.innerHTML = clustersFound ? alertHtml : "<p>No 100m proximity clusters detected.</p>";
+    } catch(e) { console.error("Map Update Error:", e); }
+}
+
+/* ==========================================================
+   LGU REPORTING HUB
+   ========================================================== */
+async function loadLGURecords(tbodySelector="table tbody", threshold=10){
+    try {
+        const res = await fetch("/api/ingestion");
+        if(!res.ok) throw new Error("Failed to fetch ingestion");
+        const data = await res.json();
+        const tbody = document.querySelector(tbodySelector);
+        if(!tbody) return;
+        tbody.innerHTML = "";
+        data.forEach(entry => {
+            const row = document.createElement("tr");
+            let riskClass = entry.egg_count > threshold ? "status-red" : "status-green";
+            let riskText = entry.egg_count > threshold ? "Escalate" : "Normal";
+            row.innerHTML = `
+                <td>${entry.timestamp}</td>
+                <td>${entry.trap_id}</td>
+                <td>${entry.trap_type}</td>
+                <td>${entry.barangay || ""}</td>
+                <td>${entry.gps}</td>
+                <td>${entry.egg_count}</td>
+                <td><span class="status-pill ${riskClass}">${riskText}</span></td>
+            `;
+            tbody.appendChild(row);
+        });
+    } catch(err){ console.error("LGU records load error:", err); }
+}
+
+async function loadBarangayThresholdChart(threshold=10){
+    try {
+        const res = await fetch("/api/ingestion");
+        if(!res.ok) throw new Error("Failed to fetch ingestion");
+        const data = await res.json();
+        const counts = {};
+        data.forEach(entry => {
+            if(!entry.barangay) return;
+            if(entry.egg_count > threshold){
+                counts[entry.barangay] = (counts[entry.barangay] || 0) + 1;
+            }
+        });
+        const labels = Object.keys(counts);
+        const values = Object.values(counts);
+        const canvas = document.getElementById("barangayChart");
+        if(!canvas) return;
+        if(barangayChart) barangayChart.destroy();
+        barangayChart = new Chart(canvas, {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: `Barangay Exceed Count (> ${threshold})`,
+                    data: values,
+                    backgroundColor: values.map(v => v >= 3 ? "#ef4444" : "#2563eb")
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    } catch(err){ console.error("LGU chart load error:", err); }
+}
+
+function renderLGUReportingHub(){
+    const main = document.getElementById("main-content");
+    main.innerHTML = `
+        <div class="section-header">
+            <h2 class="section-title">LGU Reporting Hub</h2>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Automated monitoring</span>
+        </div>
+        <div class="data-card">
+            <h3 style="margin:0 0 12px 0; font-size:0.95rem; color:var(--text-muted); font-weight:600;">Barangay Summary</h3>
+            <canvas id="barangayChart" height="120"></canvas>
+        </div>
+        <div class="data-card">
+            <table>
+                <thead><tr><th>Timestamp</th><th>Trap ID</th><th>Trap Type</th><th>Barangay</th><th>GPS</th><th>Egg Count</th><th>Status</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    `;
+    startAutoRefresh(() => {
+        loadLGURecords("#main-content table tbody", 10);
+        loadBarangayThresholdChart(10);
+    }, 5000);
+}
+
+// ----------------------------
+// PAGE RENDERERS
+// ----------------------------
+function renderDashboard(){
+    const main = document.getElementById("main-content");
+    main.innerHTML = `
+        <div class="section-header">
+            <h2 class="section-title">Live Ingestion Queue</h2>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Uplink: Active</span>
+        </div>
+        <div class="data-card">
+            <table>
+                <thead><tr><th>Source ID</th><th>Timestamp</th><th>GPS</th><th>Egg Count</th><th>Risk</th><th>Integrity</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    `;
+    startAutoRefresh(() => loadQueue("#main-content table tbody"), 5000);
+}
+
+function renderIncomingFieldData(){
+    const main = document.getElementById("main-content");
+    main.innerHTML = `
+        <div class="section-header">
+            <h2 class="section-title">Incoming Field Data</h2>
+        </div>
+        <div class="data-card">
+            <table>
+                <thead><tr><th>Trap ID</th><th>Timestamp</th><th>GPS</th><th>Egg Count</th><th>Status</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    `;
+    startAutoRefresh(() => loadQueue("#main-content table tbody"), 5000);
+}
+
+function renderHotspotAnalytics(){
+    const main = document.getElementById("main-content");
+    hotspotMap = null;
+    hotspotMarkers = [];
+    main.innerHTML = `
+        <div class="section-header">
+            <h2 class="section-title">Hotspot Analytics</h2>
+        </div>
+        <div class="data-card" style="padding:20px;">
+            <div id="map" style="width:100%; height:450px; border-radius:10px;"></div>
+        </div>
+        <div class="data-card" id="hotspot-container" style="padding:20px;">
+            <p style="font-size:0.9rem; color:var(--text-muted);">Loading...</p>
+        </div>
+    `;
+    startAutoRefresh(loadHotspotMapAndList, 5000);
+}
+
+async function triggerEscal(){
+    try {
+        const res = await fetch("/api/escalate", { method: "POST", headers: { "Content-Type": "application/json" } });
+        const data = await res.json();
+        alert(res.ok ? "Escalation Triggered." : "Escalation Failed.");
+    } catch (err) { alert("Escalation Failed."); }
+}
+
+const navLinks = document.querySelectorAll("nav .nav-link");
+navLinks.forEach(link => {
+    link.addEventListener("click", () => {
+        navLinks.forEach(l => l.classList.remove("active"));
+        link.classList.add("active");
+        const text = link.textContent.trim();
+        if(text === "Intelligence Dashboard") renderDashboard();
+        if(text === "Incoming Field Data") renderIncomingFieldData();
+        if(text === "Hotspot Analytics") renderHotspotAnalytics();
+        if(text === "LGU Reporting Hub") renderLGUReportingHub();
+    });
+});
+
+renderDashboard();
+</script>
+</body>
+</html>
