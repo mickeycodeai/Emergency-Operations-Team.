@@ -183,11 +183,16 @@ Please take immediate action.
         # Send email via Gmail SMTP
         server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
         server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-        server.send_message(msg)
+               server.send_message(msg)
         server.quit()
 
-        return jsonify({"success": True, "message": f"Escalation sent to {recipient}"})
-        return jsonify({"error": str(e)}, 500)
+        return jsonify({
+            "success": True,
+            "message": f"Escalation sent to {recipient}"
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
