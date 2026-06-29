@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -67,6 +66,21 @@ body {
     overflow: hidden;
 }
 
+.menu-toggle {
+    display: none;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 1001;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+}
+
 nav {
     background: var(--sidebar-bg);
     border-right: 1px solid var(--border);
@@ -113,8 +127,8 @@ nav {
 
 main { padding: 32px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
 .section-title { font-size: 1.125rem; font-weight: 600; }
-.data-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px; box-shadow: var(--shadow); }
-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.data-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px; box-shadow: var(--shadow); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; min-width: 600px; }
 th { text-align: left; padding: 12px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); }
 td { padding: 16px 12px; border-bottom: 1px solid var(--border); }
 .status-pill { padding: 4px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
@@ -128,9 +142,58 @@ aside { background: var(--sidebar-bg); border-left: 1px solid var(--border); pad
 
 .log-item { padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.75rem; }
 .log-meta { color: var(--text-muted); margin-bottom: 4px; display: block; }
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    body {
+        display: flex;
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+        overflow: auto;
+    }
+    nav {
+        position: fixed;
+        top: 0;
+        left: -280px;
+        width: 260px;
+        height: 100vh;
+        z-index: 1000;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    }
+    nav.open {
+        left: 0;
+    }
+    .menu-toggle {
+        display: block;
+    }
+    main {
+        flex: 1;
+        padding: 70px 16px 16px 16px;
+        overflow-y: visible;
+    }
+    aside {
+        border-left: none;
+        border-top: 1px solid var(--border);
+    }
+}
+
+@media (max-width: 768px) {
+    .section-title { font-size: 1rem; }
+    .data-card { padding: 12px; }
+    main { padding: 60px 12px 12px 12px; }
+    aside { padding: 16px; }
+    .risk-score { font-size: 2.5rem; }
+    table { min-width: 500px; font-size: 0.8rem; }
+    th, td { padding: 10px 8px; }
+}
 </style>
 </head>
 <body>
+
+<button id="menu-toggle" class="menu-toggle">☰</button>
+
 <nav>
     <div class="brand-container">
         <div class="brand-name">DPML INTELLIGENT DASHBOARD</div>
@@ -163,7 +226,23 @@ aside { background: var(--sidebar-bg); border-left: 1px solid var(--border); pad
 let refreshInterval = null;
 let hotspotMap = null;
 let hotspotMarkers = [];
+let facilityMarkers = [];
 let cityChart = null;
+let currentHotspotPoints = [];
+
+const hospitalIcon = L.divIcon({
+    html: '<div style="background:#ef4444; color:white; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; border:2px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px;">H</div>',
+    className: '',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+});
+
+const clinicIcon = L.divIcon({
+    html: '<div style="background:#10b981; color:white; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; border:2px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px;">C</div>',
+    className: '',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+});
 
 function stopAutoRefresh(){
     if(refreshInterval){
@@ -264,6 +343,115 @@ async function loadQueue(tbodySelector="table tbody") {
 }
 
 // ----------------------------
+// MEDICAL FACILITIES LOADER
+// ----------------------------
+async function loadMedicalFacilities() {
+    if (!hotspotMap) return;
+    
+    facilityMarkers.forEach(m => hotspotMap.removeLayer(m));
+    facilityMarkers = [];
+
+    const bounds = hotspotMap.getBounds();
+    const buffer = 0.045; 
+    const south = bounds.getSouth() - buffer;
+    const north = bounds.getNorth() + buffer;
+    const west = bounds.getWest() - buffer;
+    const east = bounds.getEast() + buffer;
+
+    const query = `
+        [out:json][timeout:25];
+        (
+            node["amenity"="hospital"](${south},${west},${north},${east});
+            node["amenity"="clinic"](${south},${west},${north},${east});
+        );
+        out body;
+    `;
+
+    try {
+        const res = await fetch('https://overpass-api.de/api/interpreter', {
+            method: 'POST',
+            body: query
+        });
+        const data = await res.json();
+        
+        const facilities = data.elements.map(el => ({
+            lat: el.lat,
+            lon: el.lon,
+            name: el.tags.name || 'Unknown Facility',
+            type: el.tags.amenity
+        }));
+
+        facilities.forEach(f => {
+            const icon = f.type === 'hospital' ? hospitalIcon : clinicIcon;
+            const marker = L.marker([f.lat, f.lon], { icon: icon }).addTo(hotspotMap);
+            marker.bindPopup(`<strong>${f.name}</strong><br>Type: ${f.type}`);
+            facilityMarkers.push(marker);
+        });
+
+        updateNearestFacilitiesList(facilities);
+
+    } catch (e) {
+        console.error("Failed to load medical facilities:", e);
+        updateNearestFacilitiesList([]);
+    }
+}
+
+function updateNearestFacilitiesList(facilities) {
+    const container = document.querySelector("#hotspot-container");
+    if (!container) return;
+
+    let html = "<h4>100m Proximity Alerts</h4>";
+    let clustersFound = false;
+    for(let i=0; i<currentHotspotPoints.length; i++){
+        for(let j=i+1; j<currentHotspotPoints.length; j++){
+            const d = getDistance(currentHotspotPoints[i].lat, currentHotspotPoints[i].lng, currentHotspotPoints[j].lat, currentHotspotPoints[j].lng);
+            if(d <= 100) {
+                clustersFound = true;
+                html += `<div class="log-item">
+                    <span class="log-meta" style="color:#f59e0b; font-weight:bold;">CLUSTER DETECTED</span>
+                    Traps <strong>${currentHotspotPoints[i].trap_id}</strong> & <strong>${currentHotspotPoints[j].trap_id}</strong> are ${Math.round(d)}m apart.
+                </div>`;
+            }
+        }
+    }
+    if (!clustersFound) {
+        html += "<p>No 100m proximity clusters detected.</p>";
+    }
+
+    html += "<h4 style='margin-top:20px; border-top:1px solid var(--border); padding-top:12px;'>Nearest Medical Facilities</h4>";
+    
+    if (currentHotspotPoints.length === 0) {
+        html += "<p>No hotspots to analyze.</p>";
+    } else {
+        currentHotspotPoints.forEach(p => {
+            let nearestHospital = null;
+            let minHospDist = Infinity;
+            let nearestClinic = null;
+            let minClinicDist = Infinity;
+
+            facilities.forEach(f => {
+                const dist = getDistance(p.lat, p.lng, f.lat, f.lon);
+                if (f.type === 'hospital' && dist < minHospDist) {
+                    minHospDist = dist;
+                    nearestHospital = f;
+                } else if (f.type === 'clinic' && dist < minClinicDist) {
+                    minClinicDist = dist;
+                    nearestClinic = f;
+                }
+            });
+
+            html += `<div class="log-item">
+                <span class="log-meta">Trap: <strong>${p.trap_id}</strong> (${p.egg_count} eggs)</span>
+                ${nearestHospital ? `🏥 Hospital: <strong>${nearestHospital.name}</strong> (${(minHospDist/1000).toFixed(2)} km)<br>` : '🏥 No hospital found nearby.<br>'}
+                ${nearestClinic ? `🏨 Clinic: <strong>${nearestClinic.name}</strong> (${(minClinicDist/1000).toFixed(2)} km)` : '🏨 No clinic found nearby.'}
+            </div>`;
+        });
+    }
+    
+    container.innerHTML = html;
+}
+
+// ----------------------------
 // HOTSPOT MAP + LIST
 // ----------------------------
 async function loadHotspotMapAndList() {
@@ -279,6 +467,8 @@ async function loadHotspotMapAndList() {
             return { lat, lng, egg_count: d.egg_count, trap_id: d.trap_id };
         });
 
+        currentHotspotPoints = points;
+
         if(!hotspotMap){
             const startPos = points.length > 0 ? [points[0].lat, points[0].lng] : [14.5995, 120.9842];
             hotspotMap = L.map("map").setView(startPos, 13);
@@ -292,6 +482,8 @@ async function loadHotspotMapAndList() {
                     <div class="legend-item"><div class="legend-color" style="background:#ef4444;"></div><span>High Risk (> 10)</span></div>
                     <div class="legend-item"><div class="legend-color" style="background:#2563eb;"></div><span>Normal Risk</span></div>
                     <div class="legend-item"><div class="legend-line"></div><span>100m Monitoring Zone</span></div>
+                    <div class="legend-item"><div style="background:#ef4444; color:white; width:12px; height:12px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:bold; margin-right:8px;">H</div><span>Hospital</span></div>
+                    <div class="legend-item"><div style="background:#10b981; color:white; width:12px; height:12px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:bold; margin-right:8px;">C</div><span>Clinic / Health Center</span></div>
                 `;
                 return div;
             };
@@ -312,7 +504,6 @@ async function loadHotspotMapAndList() {
             marker.bindPopup(`Trap: ${p1.trap_id}<br>Eggs: ${p1.egg_count}`);
             hotspotMarkers.push(marker);
 
-            // Always display 100m zone around every point
             const zone = L.circle([p1.lat, p1.lng], {
                 radius: 100,
                 color: "#ef4444",
@@ -325,21 +516,9 @@ async function loadHotspotMapAndList() {
             hotspotMarkers.push(zone);
         });
 
-        let alertHtml = "<h4>100m Proximity Alerts</h4>";
-        let clustersFound = false;
-        for(let i=0; i<points.length; i++){
-            for(let j=i+1; j<points.length; j++){
-                const d = getDistance(points[i].lat, points[i].lng, points[j].lat, points[j].lng);
-                if(d <= 100) {
-                    clustersFound = true;
-                    alertHtml += `<div class="log-item">
-                        <span class="log-meta" style="color:#f59e0b; font-weight:bold;">CLUSTER DETECTED</span>
-                        Traps <strong>${points[i].trap_id}</strong> & <strong>${points[j].trap_id}</strong> are ${Math.round(d)}m apart.
-                    </div>`;
-                }
-            }
-        }
-        container.innerHTML = clustersFound ? alertHtml : "<p>No 100m proximity clusters detected.</p>";
+        container.innerHTML = "<p>Loading medical facilities...</p>";
+        await loadMedicalFacilities();
+
     } catch(e) { console.error("Map Update Error:", e); }
 }
 
@@ -557,6 +736,7 @@ function renderHotspotAnalytics(){
     const main = document.getElementById("main-content");
     hotspotMap = null;
     hotspotMarkers = [];
+    facilityMarkers = [];
     main.innerHTML = `
         <div class="section-header">
             <h2 class="section-title">Hotspot Analytics</h2>
@@ -579,6 +759,11 @@ navLinks.forEach(link => {
     link.addEventListener("click", () => {
         navLinks.forEach(l => l.classList.remove("active"));
         link.classList.add("active");
+        
+        if (window.innerWidth <= 1024) {
+            document.querySelector('nav').classList.remove('open');
+        }
+
         const text = link.textContent.trim();
         if(text === "Intelligence Dashboard") renderDashboard();
         if(text === "Incoming Field Data") renderIncomingFieldData();
@@ -587,6 +772,10 @@ navLinks.forEach(link => {
         if(text === "Audit & Compliance") renderAuditCompliance();
         if(text === "System Settings") renderSystemSettings();
     });
+});
+
+document.getElementById('menu-toggle').addEventListener('click', () => {
+    document.querySelector('nav').classList.toggle('open');
 });
 
 // ----------------------------
@@ -600,7 +789,6 @@ window.addEventListener("load", () => {
     }, 1200);
 });
 
-// Start Risk Index continuous updates
 setInterval(updateRiskIndex, 5000);
 updateRiskIndex();
 
@@ -608,4 +796,3 @@ renderDashboard();
 </script>
 </body>
 </html>
-```
