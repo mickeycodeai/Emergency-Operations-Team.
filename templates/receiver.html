@@ -8,21 +8,40 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
  
 <style>
 :root {
-    --bg-main: #f8f9fa;
+    --bg-main: #f1f5f9;
     --sidebar-bg: #ffffff;
+    --card-bg: #ffffff;
     --primary: #2563eb;
-    --primary-dark: #1e40af;
-    --text-main: #1e293b;
+    --primary-light: #3b82f6;
+    --primary-dark: #1d4ed8;
+    --primary-bg: #eff6ff;
+    --text-main: #0f172a;
+    --text-secondary: #334155;
     --text-muted: #64748b;
+    --text-light: #94a3b8;
     --border: #e2e8f0;
-    --hazard-red: #ef4444;
-    --warning-orange: #f59e0b;
-    --success-green: #10b981;
+    --border-light: #f1f5f9;
+    --hazard-red: #dc2626;
+    --hazard-red-bg: #fef2f2;
+    --warning-orange: #ea580c;
+    --warning-orange-bg: #fff7ed;
+    --success-green: #16a34a;
+    --success-green-bg: #f0fdf4;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
 }
+
+* { box-sizing: border-box; }
 
 #splash-screen {
     position: fixed;
@@ -30,7 +49,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: #0f172a;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -42,7 +61,7 @@
     width: min(60vw, 520px);
     max-width: 90%;
     height: auto;
-    animation: popIn 1s ease;
+    animation: popIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes popIn {
@@ -57,13 +76,14 @@
 
 body {
     margin: 0;
-    font-family: 'Inter', -apple-system, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     background-color: var(--bg-main);
     color: var(--text-main);
     display: grid;
     grid-template-columns: 260px 1fr 340px;
     height: 100vh;
     overflow: hidden;
+    -webkit-font-smoothing: antialiased;
 }
 
 .menu-toggle {
@@ -74,20 +94,232 @@ body {
     z-index: 1001;
     background: white;
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 1.2rem;
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 1.1rem;
     cursor: pointer;
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow-md);
+    transition: all 0.2s;
 }
+.menu-toggle:hover { background: var(--bg-main); }
 
 nav {
     background: var(--sidebar-bg);
     border-right: 1px solid var(--border);
-    padding: 24px;
+    padding: 24px 16px;
     display: flex;
     flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+}
+
+.brand-container { 
+    padding: 8px 12px 20px 12px; 
+    border-bottom: 1px solid var(--border); 
+    margin-bottom: 16px; 
+}
+.brand-name { 
+    font-weight: 800; 
+    font-size: 1.1rem; 
+    color: var(--primary); 
+    letter-spacing: -0.025em; 
+    line-height: 1.2;
+}
+.brand-sub {
+    font-size: 0.7rem; 
+    color: var(--text-muted); 
+    margin-top: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.nav-section-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 16px 12px 6px 12px;
+}
+
+.nav-link { 
+    padding: 10px 12px; 
+    border-radius: var(--radius); 
+    font-size: 0.875rem; 
+    font-weight: 500; 
+    color: var(--text-secondary); 
+    cursor: pointer; 
+    transition: all 0.15s; 
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.nav-link:hover { background: var(--border-light); color: var(--text-main); }
+.nav-link.active { 
+    background: var(--primary-bg); 
+    color: var(--primary); 
+    font-weight: 600;
+}
+.nav-icon {
+    font-size: 1rem;
+    width: 20px;
+    text-align: center;
+}
+
+main { 
+    padding: 32px; 
+    overflow-y: auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 20px; 
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
     gap: 8px;
+}
+.page-title { 
+    font-size: 1.5rem; 
+    font-weight: 700; 
+    color: var(--text-main);
+    letter-spacing: -0.025em;
+    margin: 0;
+}
+.page-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.data-card { 
+    background: var(--card-bg); 
+    border: 1px solid var(--border); 
+    border-radius: var(--radius-md); 
+    padding: 20px; 
+    box-shadow: var(--shadow-sm); 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch; 
+}
+.card-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; min-width: 600px; }
+th { 
+    text-align: left; 
+    padding: 12px 16px; 
+    color: var(--text-muted); 
+    font-weight: 600; 
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border); 
+    background: var(--border-light);
+}
+td { 
+    padding: 14px 16px; 
+    border-bottom: 1px solid var(--border-light); 
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--border-light); }
+
+.status-pill { 
+    padding: 4px 10px; 
+    border-radius: 9999px; 
+    font-size: 0.7rem; 
+    font-weight: 600; 
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.status-red { background: var(--hazard-red-bg); color: var(--hazard-red); }
+.status-orange { background: var(--warning-orange-bg); color: var(--warning-orange); }
+.status-green { background: var(--success-green-bg); color: var(--success-green); }
+.status-blue { background: var(--primary-bg); color: var(--primary); }
+
+aside { 
+    background: var(--sidebar-bg); 
+    border-left: 1px solid var(--border); 
+    padding: 24px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 20px; 
+    overflow-y: auto;
+}
+.aside-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.risk-overview { 
+    text-align: center; 
+    padding: 24px 16px; 
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: var(--radius-lg); 
+    border: 1px solid var(--border); 
+}
+.risk-label {
+    font-size: 0.7rem; 
+    font-weight: 600; 
+    color: var(--text-muted); 
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+.risk-score { 
+    font-size: 3.5rem; 
+    font-weight: 800; 
+    color: var(--success-green); 
+    line-height: 1; 
+    margin: 12px 0 8px 0; 
+    transition: color 0.3s ease; 
+    letter-spacing: -0.05em;
+}
+.risk-status {
+    font-size: 0.75rem; 
+    font-weight: 700; 
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.stat-card {
+    background: var(--border-light);
+    border-radius: var(--radius);
+    padding: 14px;
+    text-align: center;
+}
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1;
+}
+.stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-weight: 500;
 }
 
 .map-legend {
@@ -96,14 +328,23 @@ nav {
     line-height: 18px;
     color: var(--text-main);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
     font-size: 0.75rem;
+    max-width: 200px;
+}
+.legend-title {
+    font-weight: 700; 
+    margin-bottom: 8px; 
+    border-bottom: 1px solid var(--border); 
+    padding-bottom: 6px;
+    font-size: 0.8rem;
 }
 .legend-item {
     display: flex;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
+    font-size: 0.72rem;
 }
 .legend-color {
     width: 12px;
@@ -111,39 +352,103 @@ nav {
     border-radius: 50%;
     margin-right: 8px;
     border: 1px solid rgba(0,0,0,0.1);
+    flex-shrink: 0;
 }
 .legend-line {
     width: 15px;
     height: 0;
-    border-top: 2px dashed #f59e0b;
+    border-top: 2px dashed #ef4444;
     margin-right: 8px;
+    flex-shrink: 0;
+}
+.legend-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: bold;
+    color: white;
+    margin-right: 8px;
+    flex-shrink: 0;
+    border: 1px solid white;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
-.brand-container { padding-bottom: 32px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
-.brand-name { font-weight: 800; font-size: 1.25rem; color: var(--primary); letter-spacing: -0.025em; }
-.nav-link { padding: 10px 12px; border-radius: 6px; font-size: 0.875rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
-.nav-link:hover { background: #f1f5f9; color: var(--text-main); }
-.nav-link.active { background: #eff6ff; color: var(--primary); }
+.log-item { 
+    padding: 12px 0; 
+    border-bottom: 1px solid var(--border-light); 
+    font-size: 0.8rem; 
+    color: var(--text-secondary);
+}
+.log-item:last-child { border-bottom: none; }
+.log-meta { 
+    color: var(--text-muted); 
+    margin-bottom: 4px; 
+    display: block; 
+    font-size: 0.72rem;
+    font-weight: 500;
+}
+.log-alert {
+    background: var(--warning-orange-bg);
+    border-left: 3px solid var(--warning-orange);
+    padding: 10px 12px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin: 8px 0;
+    font-size: 0.8rem;
+}
+.log-facility {
+    background: var(--border-light);
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    margin: 6px 0;
+    font-size: 0.8rem;
+}
 
-main { padding: 32px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
-.section-title { font-size: 1.125rem; font-weight: 600; }
-.data-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px; box-shadow: var(--shadow); overflow-x: auto; -webkit-overflow-scrolling: touch; }
-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; min-width: 600px; }
-th { text-align: left; padding: 12px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); }
-td { padding: 16px 12px; border-bottom: 1px solid var(--border); }
-.status-pill { padding: 4px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
-.status-red { background: #fee2e2; color: #b91c1c; }
-.status-orange { background: #ffedd5; color: #9a3412; }
-.status-green { background: #dcfce7; color: #15803d; }
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+}
+.empty-state-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+.empty-state-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
 
-aside { background: var(--sidebar-bg); border-left: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; gap: 24px; }
-.risk-overview { text-align: center; padding: 24px; background: #f8fafc; border-radius: 12px; border: 1px solid var(--border); }
-.risk-score { font-size: 3rem; font-weight: 800; color: var(--success-green); line-height: 1; margin: 8px 0; transition: color 0.3s ease; }
-
-.log-item { padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.75rem; }
-.log-meta { color: var(--text-muted); margin-bottom: 4px; display: block; }
+.dev-state {
+    text-align: center; 
+    padding: 80px 20px;
+}
+.dev-icon {
+    font-size: 4rem; 
+    margin-bottom: 20px;
+}
+.dev-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 8px 0;
+}
+.dev-text {
+    color: var(--text-muted); 
+    margin: 0;
+    font-size: 0.9rem;
+}
 
 /* Responsive Design */
+@media (max-width: 1200px) {
+    body {
+        grid-template-columns: 240px 1fr 300px;
+    }
+}
+
 @media (max-width: 1024px) {
     body {
         display: flex;
@@ -160,7 +465,7 @@ aside { background: var(--sidebar-bg); border-left: 1px solid var(--border); pad
         height: 100vh;
         z-index: 1000;
         transition: left 0.3s ease;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        box-shadow: var(--shadow-lg);
     }
     nav.open {
         left: 0;
@@ -177,34 +482,67 @@ aside { background: var(--sidebar-bg); border-left: 1px solid var(--border); pad
         border-left: none;
         border-top: 1px solid var(--border);
     }
+    .overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.4);
+        z-index: 999;
+    }
+    .overlay.active {
+        display: block;
+    }
 }
 
 @media (max-width: 768px) {
-    .section-title { font-size: 1rem; }
-    .data-card { padding: 12px; }
-    main { padding: 60px 12px 12px 12px; }
+    .page-title { font-size: 1.25rem; }
+    .data-card { padding: 16px; }
+    main { padding: 60px 12px 12px 12px; gap: 16px; }
     aside { padding: 16px; }
-    .risk-score { font-size: 2.5rem; }
+    .risk-score { font-size: 2.8rem; }
     table { min-width: 500px; font-size: 0.8rem; }
-    th, td { padding: 10px 8px; }
+    th, td { padding: 10px 12px; }
+    .stat-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 <body>
 
 <button id="menu-toggle" class="menu-toggle">☰</button>
+<div id="overlay" class="overlay"></div>
 
 <nav>
     <div class="brand-container">
         <div class="brand-name">DPML INTELLIGENT DASHBOARD</div>
-        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">OPERATIONAL INTELLIGENCE</div>
+        <div class="brand-sub">Operational Intelligence</div>
     </div>
-    <div class="nav-link active">Intelligence Dashboard</div>
-    <div class="nav-link">Incoming Field Data</div>
-    <div class="nav-link">Hotspot Analytics</div>
-    <div class="nav-link">LGU Reporting Hub</div>
-    <div class="nav-link">Audit & Compliance</div>
-    <div class="nav-link" style="margin-top: auto;">System Settings</div>
+    
+    <div class="nav-section-label">Main</div>
+    <div class="nav-link active" data-page="dashboard">
+        <span class="nav-icon">📊</span> Intelligence Dashboard
+    </div>
+    <div class="nav-link" data-page="incoming">
+        <span class="nav-icon">📥</span> Incoming Field Data
+    </div>
+    <div class="nav-link" data-page="hotspot">
+        <span class="nav-icon">🗺️</span> Hotspot Analytics
+    </div>
+    
+    <div class="nav-section-label">Reports</div>
+    <div class="nav-link" data-page="lgu">
+        <span class="nav-icon">🏛️</span> City Reporting Hub
+    </div>
+    <div class="nav-link" data-page="audit">
+        <span class="nav-icon">🔒</span> Audit & Compliance
+    </div>
+    
+    <div class="nav-section-label">System</div>
+    <div class="nav-link" data-page="settings" style="margin-top: auto;">
+        <span class="nav-icon">⚙️</span> System Settings
+    </div>
 </nav>
 
 <main id="main-content"></main>
@@ -214,11 +552,23 @@ aside { background: var(--sidebar-bg); border-left: 1px solid var(--border); pad
 </div>
     
 <aside>
-    <div class="section-title">Risk Intelligence</div>
+    <div class="aside-title">Risk Intelligence</div>
     <div class="risk-overview">
-        <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Computed Risk Index</span>
+        <div class="risk-label">Computed Risk Index</div>
         <div class="risk-score">0.00</div>
-        <span id="risk-status" style="font-size: 0.75rem; color: var(--success-green); font-weight: 700;">NORMAL</span>
+        <div id="risk-status" class="risk-status" style="color: var(--success-green);">NORMAL</div>
+    </div>
+    
+    <div class="aside-title">Quick Statistics</div>
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-value" id="stat-total">0</div>
+            <div class="stat-label">Total Traps</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="stat-high" style="color: var(--hazard-red);">0</div>
+            <div class="stat-label">High Risk</div>
+        </div>
     </div>
 </aside>
 
@@ -231,17 +581,17 @@ let cityChart = null;
 let currentHotspotPoints = [];
 
 const hospitalIcon = L.divIcon({
-    html: '<div style="background:#ef4444; color:white; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; border:2px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px;">H</div>',
+    html: '<div style="background:#dc2626; color:white; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; border:2px solid white; box-shadow:0 2px 6px rgba(0,0,0,0.3); font-size:13px;">H</div>',
     className: '',
-    iconSize: [28, 28],
-    iconAnchor: [14, 14]
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
 });
 
 const clinicIcon = L.divIcon({
-    html: '<div style="background:#10b981; color:white; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; border:2px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px;">C</div>',
+    html: '<div style="background:#16a34a; color:white; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; border:2px solid white; box-shadow:0 2px 6px rgba(0,0,0,0.3); font-size:13px;">C</div>',
     className: '',
-    iconSize: [28, 28],
-    iconAnchor: [14, 14]
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
 });
 
 function stopAutoRefresh(){
@@ -257,9 +607,6 @@ function startAutoRefresh(fn, ms=5000){
     refreshInterval = setInterval(fn, ms);
 }
 
-// ----------------------------
-// DATA UTILITIES
-// ----------------------------
 function getDistance(lat1, lon1, lat2, lon2) {
     const R = 6371e3; 
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -279,18 +626,19 @@ async function updateRiskIndex() {
         const res = await fetch("/api/ingestion");
         if(!res.ok) return;
         const data = await res.json();
+        
+        document.getElementById("stat-total").textContent = data.length;
+        const highRisk = data.filter(d => d.egg_count > 10).length;
+        document.getElementById("stat-high").textContent = highRisk;
+        
         if(data.length === 0) {
             document.querySelector(".risk-score").textContent = "0.00";
             return;
         }
         
-        const highRisk = data.filter(d => d.egg_count > 10).length;
-        const total = data.length;
-        const avgEggs = data.reduce((sum, d) => sum + (d.egg_count || 0), 0) / total;
-        
-        const highRiskRatio = highRisk / total;
+        const avgEggs = data.reduce((sum, d) => sum + (d.egg_count || 0), 0) / data.length;
+        const highRiskRatio = highRisk / data.length;
         const normalizedEggs = Math.min(avgEggs / 50, 1);
-        
         const riskScore = Math.min((highRiskRatio * 0.7 + normalizedEggs * 0.3), 1).toFixed(2);
         
         const scoreEl = document.querySelector(".risk-score");
@@ -323,15 +671,21 @@ async function loadQueue(tbodySelector="table tbody") {
         const tbody = document.querySelector(tbodySelector);
         if(!tbody) return;
         tbody.innerHTML = "";
+        
+        if(data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">No data available</td></tr>`;
+            return;
+        }
+        
         data.forEach(entry => {
             const row = document.createElement("tr");
             let riskClass = entry.egg_count > 10 ? "status-red" : "status-green";
             let riskText = entry.egg_count > 10 ? "High" : "Normal";
             row.innerHTML = `
-                <td>${entry.trap_id}</td>
+                <td><strong>${entry.trap_id}</strong></td>
                 <td>${entry.timestamp}</td>
-                <td>${entry.gps}</td>
-                <td>${entry.egg_count}</td>
+                <td style="font-family:monospace; font-size:0.8rem;">${entry.gps}</td>
+                <td><strong>${entry.egg_count}</strong></td>
                 <td><span class="status-pill ${riskClass}">${riskText}</span></td>
                 <td><span class="status-pill ${entry.sha256_valid ? 'status-green' : 'status-red'}">${entry.sha256_valid ? 'Valid' : 'Invalid'}</span></td>
             `;
@@ -400,28 +754,29 @@ function updateNearestFacilitiesList(facilities) {
     const container = document.querySelector("#hotspot-container");
     if (!container) return;
 
-    let html = "<h4>100m Proximity Alerts</h4>";
+    let html = "<h4 class='card-title'>📍 100m Proximity Alerts</h4>";
     let clustersFound = false;
+    
     for(let i=0; i<currentHotspotPoints.length; i++){
         for(let j=i+1; j<currentHotspotPoints.length; j++){
             const d = getDistance(currentHotspotPoints[i].lat, currentHotspotPoints[i].lng, currentHotspotPoints[j].lat, currentHotspotPoints[j].lng);
             if(d <= 100) {
                 clustersFound = true;
-                html += `<div class="log-item">
-                    <span class="log-meta" style="color:#f59e0b; font-weight:bold;">CLUSTER DETECTED</span>
+                html += `<div class="log-alert">
+                    <strong>CLUSTER DETECTED</strong><br>
                     Traps <strong>${currentHotspotPoints[i].trap_id}</strong> & <strong>${currentHotspotPoints[j].trap_id}</strong> are ${Math.round(d)}m apart.
                 </div>`;
             }
         }
     }
     if (!clustersFound) {
-        html += "<p>No 100m proximity clusters detected.</p>";
+        html += `<div class="empty-state" style="padding:20px;"><div class="empty-state-icon">✓</div><div class="empty-state-text">No 100m proximity clusters detected</div></div>`;
     }
 
-    html += "<h4 style='margin-top:20px; border-top:1px solid var(--border); padding-top:12px;'>Nearest Medical Facilities</h4>";
+    html += "<h4 class='card-title' style='margin-top:24px; border-top:1px solid var(--border); padding-top:16px;'>🏥 Nearest Medical Facilities</h4>";
     
     if (currentHotspotPoints.length === 0) {
-        html += "<p>No hotspots to analyze.</p>";
+        html += `<div class="empty-state"><div class="empty-state-icon">📍</div><div class="empty-state-text">No hotspots to analyze</div></div>`;
     } else {
         currentHotspotPoints.forEach(p => {
             let nearestHospital = null;
@@ -440,10 +795,10 @@ function updateNearestFacilitiesList(facilities) {
                 }
             });
 
-            html += `<div class="log-item">
-                <span class="log-meta">Trap: <strong>${p.trap_id}</strong> (${p.egg_count} eggs)</span>
-                ${nearestHospital ? `🏥 Hospital: <strong>${nearestHospital.name}</strong> (${(minHospDist/1000).toFixed(2)} km)<br>` : '🏥 No hospital found nearby.<br>'}
-                ${nearestClinic ? `🏨 Clinic: <strong>${nearestClinic.name}</strong> (${(minClinicDist/1000).toFixed(2)} km)` : '🏨 No clinic found nearby.'}
+            html += `<div class="log-facility">
+                <strong style="color:var(--text-main);">Trap: ${p.trap_id}</strong> <span style="color:var(--text-muted);">(${p.egg_count} eggs)</span><br>
+                ${nearestHospital ? `<span style="color:var(--hazard-red);">🏥 Hospital:</span> <strong>${nearestHospital.name}</strong> <span style="color:var(--text-muted);">(${(minHospDist/1000).toFixed(2)} km)</span><br>` : '<span style="color:var(--text-muted);">🏥 No hospital found nearby</span><br>'}
+                ${nearestClinic ? `<span style="color:var(--success-green);">🏨 Clinic:</span> <strong>${nearestClinic.name}</strong> <span style="color:var(--text-muted);">(${(minClinicDist/1000).toFixed(2)} km)</span>` : '<span style="color:var(--text-muted);">🏨 No clinic found nearby</span>'}
             </div>`;
         });
     }
@@ -478,12 +833,12 @@ async function loadHotspotMapAndList() {
             legend.onAdd = function () {
                 const div = L.DomUtil.create('div', 'map-legend');
                 div.innerHTML = `
-                    <div style="font-weight:700; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:4px;">Map Details</div>
-                    <div class="legend-item"><div class="legend-color" style="background:#ef4444;"></div><span>High Risk (> 10)</span></div>
+                    <div class="legend-title">Map Legend</div>
+                    <div class="legend-item"><div class="legend-color" style="background:#dc2626;"></div><span>High Risk (> 10 eggs)</span></div>
                     <div class="legend-item"><div class="legend-color" style="background:#2563eb;"></div><span>Normal Risk</span></div>
                     <div class="legend-item"><div class="legend-line"></div><span>100m Monitoring Zone</span></div>
-                    <div class="legend-item"><div style="background:#ef4444; color:white; width:12px; height:12px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:bold; margin-right:8px;">H</div><span>Hospital</span></div>
-                    <div class="legend-item"><div style="background:#10b981; color:white; width:12px; height:12px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:bold; margin-right:8px;">C</div><span>Clinic / Health Center</span></div>
+                    <div class="legend-item"><div class="legend-icon" style="background:#dc2626;">H</div><span>Hospital</span></div>
+                    <div class="legend-item"><div class="legend-icon" style="background:#16a34a;">C</div><span>Clinic / Health Center</span></div>
                 `;
                 return div;
             };
@@ -495,28 +850,28 @@ async function loadHotspotMapAndList() {
 
         points.forEach((p1, i) => {
             const marker = L.circleMarker([p1.lat, p1.lng], {
-                radius: 7,
-                fillColor: p1.egg_count > 10 ? "#ef4444" : "#2563eb",
+                radius: 8,
+                fillColor: p1.egg_count > 10 ? "#dc2626" : "#2563eb",
                 color: "#fff",
                 weight: 2,
                 fillOpacity: 0.9
             }).addTo(hotspotMap);
-            marker.bindPopup(`Trap: ${p1.trap_id}<br>Eggs: ${p1.egg_count}`);
+            marker.bindPopup(`<strong>Trap: ${p1.trap_id}</strong><br>Egg Count: ${p1.egg_count}`);
             hotspotMarkers.push(marker);
 
             const zone = L.circle([p1.lat, p1.lng], {
                 radius: 100,
-                color: "#ef4444",
-                weight: 1,
+                color: "#dc2626",
+                weight: 1.5,
                 dashArray: '5, 5',
-                fillColor: "#ef4444", 
+                fillColor: "#dc2626", 
                 fillOpacity: 0.05,
                 interactive: false
             }).addTo(hotspotMap);
             hotspotMarkers.push(zone);
         });
 
-        container.innerHTML = "<p>Loading medical facilities...</p>";
+        container.innerHTML = "<p style='color:var(--text-muted); text-align:center; padding:20px;'>Loading medical facilities...</p>";
         await loadMedicalFacilities();
 
     } catch(e) { console.error("Map Update Error:", e); }
@@ -533,22 +888,28 @@ async function loadLGURecords(tbodySelector="table tbody", threshold=10){
         const tbody = document.querySelector(tbodySelector);
         if(!tbody) return;
         tbody.innerHTML = "";
+        
+        if(data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">No data available</td></tr>`;
+            return;
+        }
+        
         data.forEach(entry => {
             const row = document.createElement("tr");
             let riskClass = entry.egg_count > threshold ? "status-red" : "status-green";
             let riskText = entry.egg_count > threshold ? "Escalate" : "Normal";
             row.innerHTML = `
                 <td>${entry.timestamp}</td>
-                <td>${entry.trap_id}</td>
-                <td>${entry.trap_type}</td>
-                <td>${entry.city || entry.barangay || ""}</td>
-                <td>${entry.gps}</td>
-                <td>${entry.egg_count}</td>
+                <td><strong>${entry.trap_id}</strong></td>
+                <td>${entry.trap_type || 'N/A'}</td>
+                <td>${entry.city || "N/A"}</td>
+                <td style="font-family:monospace; font-size:0.8rem;">${entry.gps}</td>
+                <td><strong>${entry.egg_count}</strong></td>
                 <td><span class="status-pill ${riskClass}">${riskText}</span></td>
             `;
             tbody.appendChild(row);
         });
-    } catch(err){ console.error("LGU records load error:", err); }
+    } catch(err){ console.error("City records load error:", err); }
 }
 
 async function loadCityThresholdChart(threshold=10){
@@ -558,7 +919,7 @@ async function loadCityThresholdChart(threshold=10){
         const data = await res.json();
         const counts = {};
         data.forEach(entry => {
-            const cityName = entry.city || entry.barangay || "Unknown";
+            const cityName = entry.city || "Unknown";
             if(entry.egg_count > threshold){
                 counts[cityName] = (counts[cityName] || 0) + 1;
             }
@@ -568,19 +929,37 @@ async function loadCityThresholdChart(threshold=10){
         const canvas = document.getElementById("cityChart");
         if(!canvas) return;
         if(cityChart) cityChart.destroy();
+        
+        if(labels.length === 0) {
+            const ctx = canvas.getContext('2d');
+            ctx.font = '14px Inter';
+            ctx.fillStyle = '#64748b';
+            ctx.textAlign = 'center';
+            ctx.fillText('No cities exceeding threshold', canvas.width / 2, canvas.height / 2);
+            return;
+        }
+        
         cityChart = new Chart(canvas, {
             type: "bar",
             data: {
                 labels: labels,
                 datasets: [{
-                    label: `City Exceed Count (> ${threshold})`,
+                    label: `Cities Exceeding Threshold (> ${threshold})`,
                     data: values,
-                    backgroundColor: values.map(v => v >= 3 ? "#ef4444" : "#2563eb")
+                    backgroundColor: values.map(v => v >= 3 ? "#dc2626" : "#2563eb"),
+                    borderRadius: 6,
+                    borderSkipped: false
                 }]
             },
             options: {
                 responsive: true,
-                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: { 
+                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#f1f5f9' } },
+                    x: { grid: { display: false } }
+                }
             }
         });
     } catch(err){ console.error("City chart load error:", err); }
@@ -589,15 +968,18 @@ async function loadCityThresholdChart(threshold=10){
 function renderLGUReportingHub(){
     const main = document.getElementById("main-content");
     main.innerHTML = `
-        <div class="section-header">
-            <h2 class="section-title">LGU Reporting Hub</h2>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">Automated monitoring</span>
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">City Reporting Hub</h1>
+                <div class="page-subtitle">Automated city-level monitoring and escalation</div>
+            </div>
         </div>
         <div class="data-card">
-            <h3 style="margin:0 0 12px 0; font-size:0.95rem; color:var(--text-muted); font-weight:600;">City Summary</h3>
+            <h3 class="card-title">📊 City Summary</h3>
             <canvas id="cityChart" height="120"></canvas>
         </div>
         <div class="data-card">
+            <h3 class="card-title">📋 Detailed Records</h3>
             <table>
                 <thead><tr><th>Timestamp</th><th>Trap ID</th><th>Trap Type</th><th>City</th><th>GPS</th><th>Egg Count</th><th>Status</th></tr></thead>
                 <tbody></tbody>
@@ -616,24 +998,26 @@ function renderLGUReportingHub(){
 function renderAuditCompliance() {
     const main = document.getElementById("main-content");
     main.innerHTML = `
-        <div class="section-header">
-            <h2 class="section-title">Audit & Compliance</h2>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">System Integrity & Logs</span>
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Audit & Compliance</h1>
+                <div class="page-subtitle">System integrity monitoring and data validation</div>
+            </div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div class="data-card">
-                <h3 style="margin:0 0 12px 0; font-size:0.95rem; color:var(--text-muted); font-weight:600;">System Health</h3>
+                <h3 class="card-title">💚 System Health</h3>
                 <div id="system-health">Loading...</div>
             </div>
             <div class="data-card">
-                <h3 style="margin:0 0 12px 0; font-size:0.95rem; color:var(--text-muted); font-weight:600;">Data Integrity Summary</h3>
+                <h3 class="card-title">🔐 Data Integrity Summary</h3>
                 <div id="integrity-summary">Loading...</div>
             </div>
         </div>
         <div class="data-card">
-            <h3 style="margin:0 0 12px 0; font-size:0.95rem; color:var(--text-muted); font-weight:600;">Recent Audit Logs</h3>
+            <h3 class="card-title">📜 Recent Audit Logs</h3>
             <table>
-                <thead><tr><th>Timestamp</th><th>Trap ID</th><th>SHA-256 Status</th><th>Action</th></tr></thead>
+                <thead><tr><th>Timestamp</th><th>Trap ID</th><th>SHA-256 Status</th><th>Action Taken</th></tr></thead>
                 <tbody id="audit-tbody"></tbody>
             </table>
         </div>
@@ -649,26 +1033,55 @@ function renderAuditCompliance() {
             const invalid = data.length - valid;
             
             document.getElementById("system-health").innerHTML = `
-                <p style="margin:4px 0;"><strong>Status:</strong> <span class="status-pill status-green">Operational</span></p>
-                <p style="margin:4px 0;"><strong>Total Records:</strong> ${data.length}</p>
-                <p style="margin:4px 0;"><strong>Last Sync:</strong> ${new Date().toLocaleString()}</p>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:var(--text-muted); font-size:0.85rem;">Status</span>
+                        <span class="status-pill status-green">Operational</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:var(--text-muted); font-size:0.85rem;">Total Records</span>
+                        <strong>${data.length}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:var(--text-muted); font-size:0.85rem;">Last Sync</span>
+                        <strong style="font-size:0.85rem;">${new Date().toLocaleString()}</strong>
+                    </div>
+                </div>
             `;
             
+            const integrityRate = data.length > 0 ? ((valid/data.length)*100).toFixed(1) : 0;
             document.getElementById("integrity-summary").innerHTML = `
-                <p style="margin:4px 0;"><strong>Valid Hashes:</strong> <span class="status-pill status-green">${valid}</span></p>
-                <p style="margin:4px 0;"><strong>Invalid Hashes:</strong> <span class="status-pill ${invalid > 0 ? 'status-red' : 'status-green'}">${invalid}</span></p>
-                <p style="margin:4px 0;"><strong>Integrity Rate:</strong> ${data.length > 0 ? ((valid/data.length)*100).toFixed(1) : 0}%</p>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:var(--text-muted); font-size:0.85rem;">Valid Hashes</span>
+                        <span class="status-pill status-green">${valid}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:var(--text-muted); font-size:0.85rem;">Invalid Hashes</span>
+                        <span class="status-pill ${invalid > 0 ? 'status-red' : 'status-green'}">${invalid}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:var(--text-muted); font-size:0.85rem;">Integrity Rate</span>
+                        <strong style="color: ${integrityRate >= 90 ? 'var(--success-green)' : 'var(--hazard-red)'};">${integrityRate}%</strong>
+                    </div>
+                </div>
             `;
             
             const tbody = document.getElementById("audit-tbody");
             tbody.innerHTML = "";
+            
+            if(data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--text-muted);">No audit logs available</td></tr>`;
+                return;
+            }
+            
             data.slice(-10).reverse().forEach(entry => {
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${entry.timestamp}</td>
-                    <td>${entry.trap_id}</td>
+                    <td><strong>${entry.trap_id}</strong></td>
                     <td><span class="status-pill ${entry.sha256_valid ? 'status-green' : 'status-red'}">${entry.sha256_valid ? 'Valid' : 'Invalid'}</span></td>
-                    <td>${entry.sha256_valid ? 'Accepted' : 'Flagged for Review'}</td>
+                    <td>${entry.sha256_valid ? '<span style="color:var(--success-green);">✓ Accepted</span>' : '<span style="color:var(--hazard-red);">⚠ Flagged for Review</span>'}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -685,13 +1098,18 @@ function renderSystemSettings() {
     stopAutoRefresh();
     const main = document.getElementById("main-content");
     main.innerHTML = `
-        <div class="section-header">
-            <h2 class="section-title">System Settings</h2>
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">System Settings</h1>
+                <div class="page-subtitle">Configuration and preferences</div>
+            </div>
         </div>
-        <div class="data-card" style="text-align: center; padding: 60px 20px;">
-            <div style="font-size: 3rem; margin-bottom: 16px;">🚧</div>
-            <h3 style="margin: 0 0 8px 0;">Under Development</h3>
-            <p style="color: var(--text-muted); margin: 0;">This module is currently under development. Please check back later.</p>
+        <div class="data-card">
+            <div class="dev-state">
+                <div class="dev-icon">🚧</div>
+                <h3 class="dev-title">Under Development</h3>
+                <p class="dev-text">This module is currently under development.<br>Please check back later for updates.</p>
+            </div>
         </div>
     `;
 }
@@ -702,13 +1120,16 @@ function renderSystemSettings() {
 function renderDashboard(){
     const main = document.getElementById("main-content");
     main.innerHTML = `
-        <div class="section-header">
-            <h2 class="section-title">Live Ingestion Queue</h2>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">Uplink: Active</span>
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Intelligence Dashboard</h1>
+                <div class="page-subtitle">Live ingestion queue monitoring</div>
+            </div>
         </div>
         <div class="data-card">
+            <h3 class="card-title">📡 Live Data Stream</h3>
             <table>
-                <thead><tr><th>Source ID</th><th>Timestamp</th><th>GPS</th><th>Egg Count</th><th>Risk</th><th>Integrity</th></tr></thead>
+                <thead><tr><th>Trap ID</th><th>Timestamp</th><th>GPS</th><th>Egg Count</th><th>Risk Level</th><th>Integrity</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
@@ -719,10 +1140,14 @@ function renderDashboard(){
 function renderIncomingFieldData(){
     const main = document.getElementById("main-content");
     main.innerHTML = `
-        <div class="section-header">
-            <h2 class="section-title">Incoming Field Data</h2>
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Incoming Field Data</h1>
+                <div class="page-subtitle">Real-time field sensor data</div>
+            </div>
         </div>
         <div class="data-card">
+            <h3 class="card-title">📥 Field Data Stream</h3>
             <table>
                 <thead><tr><th>Trap ID</th><th>Timestamp</th><th>GPS</th><th>Egg Count</th><th>Status</th></tr></thead>
                 <tbody></tbody>
@@ -738,14 +1163,17 @@ function renderHotspotAnalytics(){
     hotspotMarkers = [];
     facilityMarkers = [];
     main.innerHTML = `
-        <div class="section-header">
-            <h2 class="section-title">Hotspot Analytics</h2>
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Hotspot Analytics</h1>
+                <div class="page-subtitle">Geographic risk mapping and facility proximity</div>
+            </div>
         </div>
-        <div class="data-card" style="padding:20px;">
-            <div id="map" style="width:100%; height:450px; border-radius:10px;"></div>
+        <div class="data-card" style="padding:16px;">
+            <div id="map" style="width:100%; height:500px; border-radius:var(--radius);"></div>
         </div>
         <div class="data-card" id="hotspot-container" style="padding:20px;">
-            <p style="font-size:0.9rem; color:var(--text-muted);">Loading...</p>
+            <p style="font-size:0.9rem; color:var(--text-muted); text-align:center;">Loading...</p>
         </div>
     `;
     startAutoRefresh(loadHotspotMapAndList, 5000);
@@ -762,20 +1190,27 @@ navLinks.forEach(link => {
         
         if (window.innerWidth <= 1024) {
             document.querySelector('nav').classList.remove('open');
+            document.getElementById('overlay').classList.remove('active');
         }
 
-        const text = link.textContent.trim();
-        if(text === "Intelligence Dashboard") renderDashboard();
-        if(text === "Incoming Field Data") renderIncomingFieldData();
-        if(text === "Hotspot Analytics") renderHotspotAnalytics();
-        if(text === "LGU Reporting Hub") renderLGUReportingHub();
-        if(text === "Audit & Compliance") renderAuditCompliance();
-        if(text === "System Settings") renderSystemSettings();
+        const page = link.getAttribute('data-page');
+        if(page === "dashboard") renderDashboard();
+        if(page === "incoming") renderIncomingFieldData();
+        if(page === "hotspot") renderHotspotAnalytics();
+        if(page === "lgu") renderLGUReportingHub();
+        if(page === "audit") renderAuditCompliance();
+        if(page === "settings") renderSystemSettings();
     });
 });
 
 document.getElementById('menu-toggle').addEventListener('click', () => {
     document.querySelector('nav').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('active');
+});
+
+document.getElementById('overlay').addEventListener('click', () => {
+    document.querySelector('nav').classList.remove('open');
+    document.getElementById('overlay').classList.remove('active');
 });
 
 // ----------------------------
